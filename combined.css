@@ -1,4 +1,8 @@
 /* ==============================================
+ * CONSOLIDATED FINANCE TRACKER STYLES
+ * ============================================== */
+
+/* ==============================================
  * RESET & BASE STYLES
  * ============================================== */
 * {
@@ -136,7 +140,7 @@ body {
 /* ==============================================
  * HEADER & NAVIGATION
  * ============================================== */
-header {
+.app-header {
     background-color: var(--surface);
     color: var(--on-surface);
     border-radius: var(--radius-md);
@@ -152,7 +156,7 @@ header {
     padding: var(--spacing-5);
 }
 
-header h1 {
+.app-header h1 {
     font-size: 1.5rem;
     font-weight: 600;
     letter-spacing: -0.02em;
@@ -162,6 +166,22 @@ header h1 {
 .app-actions {
     display: flex;
     gap: var(--spacing-3);
+}
+
+/* Section headers (unified style) */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4);
+    cursor: pointer;
+}
+
+.section-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
 }
 
 /* Mobile Tab Navigation */
@@ -198,9 +218,56 @@ header h1 {
 }
 
 /* ==============================================
+ * SHARED CARD/CONTAINER STYLES
+ * ============================================== */
+.app-card {
+    background-color: var(--surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-5);
+    transition: background-color var(--transition-normal);
+    margin-bottom: var(--spacing-5);
+    overflow: hidden;
+}
+
+.app-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Header container (used in billing periods) */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+    transition: border-color var(--transition-normal);
+}
+
+.header-container h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    color: var(--text-primary);
+    transition: color var(--transition-normal);
+}
+
+.header-container h2 span {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-left: var(--spacing-2);
+    transition: color var(--transition-normal);
+}
+
+/* ==============================================
  * BUTTON STYLES
  * ============================================== */
-button {
+/* Base button style */
+.app-btn {
     background-color: var(--secondary);
     color: var(--text-primary);
     border: none;
@@ -217,102 +284,68 @@ button {
     gap: var(--spacing-2);
 }
 
-button:hover {
+.app-btn:hover {
     background-color: rgba(236, 237, 241, 0.8);
 }
 
-button:active {
+.app-btn:active {
     background-color: rgba(228, 229, 235, 0.8);
 }
 
-/* Primary buttons */
-.btn-filled, #create-custom-period-btn, #add-period-btn, .add-bill-btn {
+/* Primary button style */
+.app-btn-primary {
     background-color: var(--primary);
     color: var(--on-primary);
     font-weight: 500;
 }
 
-.btn-filled:hover, #create-custom-period-btn:hover, #add-period-btn:hover, .add-bill-btn:hover {
+.app-btn-primary:hover {
     background-color: var(--primary-dark);
 }
 
-/* Edit/Delete buttons for periods */
-.period-buttons {
-    display: flex;
-    gap: var(--spacing-3);
-    align-items: center;
-}
-
-.edit-period-btn,
-.delete-period-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2) var(--spacing-3);
-    border-radius: var(--radius-full);
-    min-width: 90px;
-    height: 36px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color var(--transition-fast);
-}
-
-.edit-period-btn {
+/* Secondary button style */
+.app-btn-secondary {
     background-color: var(--secondary);
     color: var(--text-primary);
 }
 
-.edit-period-btn:hover {
-    background-color: rgba(236, 237, 241, 0.8);
+/* Standardized delete icon */
+.material-icons-round.delete-icon {
+    font-size: 18px;
+    line-height: 1;
 }
 
-.delete-period-btn {
-    background-color: transparent;
-    color: var(--negative);
+/* Button size classes - Add these without changing existing button classes */
+.btn-sm {
+    min-height: 36px;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.875rem;
 }
 
-.delete-period-btn:hover {
-    background-color: var(--negative-light);
+.btn-md {
+    min-height: 40px;
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: 0.875rem;
 }
 
-/* Transaction delete button */
+.btn-lg {
+    min-height: 48px;
+    padding: var(--spacing-3) var(--spacing-5);
+    font-size: 1rem;
+}
+
+/* Fix for InterestFreeTracker's addDeleteEventListeners method */
 .delete-transaction-btn {
-    background-color: transparent;
-    color: var(--negative);
-    padding: var(--spacing-1);
-    margin-left: var(--spacing-2);
-    border-radius: 50%;
     min-width: 36px;
     min-height: 36px;
+    padding: var(--spacing-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.delete-transaction-btn:hover {
-    background-color: var(--negative-light);
-}
-
-.delete-transaction-btn .material-icons-round {
-    font-size: 44px;
-}
-
-/* Bill delete button */
-.delete-btn {
-    background-color: transparent;
-    color: var(--negative);
-    padding: var(--spacing-1);
-    margin-left: var(--spacing-2);
-    border-radius: 50%;
-    min-width: 36px;
-    min-height: 36px;
-}
-
-.delete-btn:hover {
-    background-color: var(--negative-light);
-}
-
-/* Toggle buttons */
-.toggle-btn {
+/* Icon button style */
+.app-btn-icon {
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
@@ -322,8 +355,19 @@ button:active {
     transition: background-color var(--transition-fast);
 }
 
-.toggle-btn:hover {
-    background-color: var(--secondary);
+/* Delete button (used across components) */
+.app-btn-delete {
+    background-color: transparent;
+    color: var(--negative);
+    padding: var(--spacing-1);
+    margin-left: var(--spacing-2);
+    border-radius: 50%;
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.app-btn-delete:hover {
+    background-color: var(--negative-light);
 }
 
 /* Period action buttons */
@@ -340,6 +384,69 @@ button:active {
     min-width: 140px;
     min-height: 40px;
     justify-content: center;
+}
+
+/* Edit/Delete buttons for periods */
+.period-buttons {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+}
+
+.edit-period-btn {
+    background-color: var(--secondary);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-full);
+    min-width: 90px;
+    height: 36px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.edit-period-btn:hover {
+    background-color: rgba(236, 237, 241, 0.8);
+}
+
+.delete-period-btn {
+    background-color: transparent;
+    color: var(--negative);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-full);
+    min-width: 90px;
+    height: 36px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.delete-period-btn:hover {
+    background-color: var(--negative-light);
+}
+
+/* Toggle buttons */
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.toggle-btn:hover {
+    background-color: var(--secondary);
 }
 
 /* ==============================================
@@ -404,17 +511,9 @@ button:active {
 }
 
 /* ==============================================
- * INTEREST-FREE TRACKER STYLES
+ * FORM ELEMENTS
  * ============================================== */
-/* New period controls */
-.new-period-controls {
-    background-color: var(--surface);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-5);
-    margin-bottom: var(--spacing-5);
-    transition: background-color var(--transition-normal);
-}
-
+/* Form rows (for interest-free tracker) */
 .form-row {
     display: flex;
     align-items: center;
@@ -447,55 +546,61 @@ button:active {
     border-color: var(--primary);
 }
 
+/* Form groups (consolidated from both components) */
+.app-form-group {
+    margin-bottom: var(--spacing-4);
+}
+
+.app-form-group label {
+    display: block;
+    margin-bottom: var(--spacing-2);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.app-form-group input, 
+.app-form-group select {
+    width: 100%;
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    color: var(--text-primary);
+}
+
+.app-form-group input:focus,
+.app-form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Input with prefix styling */
+.app-input-with-prefix {
+    position: relative;
+}
+
+.app-input-prefix {
+    position: absolute;
+    left: var(--spacing-3);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.app-input-with-prefix input {
+    padding-left: 26px;
+}
+
+/* ==============================================
+ * INTEREST-FREE TRACKER STYLES
+ * ============================================== */
 /* Billing Periods Container */
 #billing-periods {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-5);
-}
-
-/* Billing Period */
-.billing-period {
-    background-color: var(--surface);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-5);
-    transition: background-color var(--transition-normal);
-    margin-bottom: var(--spacing-5);
-    overflow: hidden;
-}
-
-.billing-period:hover {
-    box-shadow: var(--shadow-lg);
-}
-
-/* Header container */
-.header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
-    border-bottom: 1px solid var(--border-color);
-    transition: border-color var(--transition-normal);
-}
-
-.header-container h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    color: var(--text-primary);
-    transition: color var(--transition-normal);
-}
-
-.header-container h2 span {
-    font-size: 0.9rem;
-    font-weight: 400;
-    color: var(--text-secondary);
-    margin-left: var(--spacing-2);
-    transition: color var(--transition-normal);
 }
 
 /* Interest-free period info section */
@@ -608,48 +713,6 @@ button:active {
 /* ==============================================
  * BILL PLANNER SPECIFIC STYLES
  * ============================================== */
-/* Form components */
-.bp-form-group, .form-group {
-    margin-bottom: var(--spacing-4);
-}
-
-.bp-form-group label, .form-group label {
-    display: block;
-    margin-bottom: var(--spacing-2);
-    color: var(--text-secondary);
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.bp-form-group input, 
-.bp-form-group select,
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: var(--spacing-3);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    background-color: var(--surface);
-    color: var(--text-primary);
-}
-
-.bp-input-with-prefix, .input-with-prefix {
-    position: relative;
-}
-
-.bp-input-prefix, .input-prefix {
-    position: absolute;
-    left: var(--spacing-3);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.bp-input-with-prefix input, .input-with-prefix input {
-    padding-left: 26px;
-}
-
 /* Layout and Sections */
 .bill-planner-forms {
     display: flex;
@@ -661,23 +724,13 @@ button:active {
 .form-section {
     flex: 1;
     min-width: 300px;
-    background-color: var(--surface);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-5);
-    transition: background-color var(--transition-normal);
 }
 
 .financial-overview {
     width: 100%;
-    background-color: var(--surface);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-5);
-    margin-bottom: var(--spacing-5);
 }
 
 .add-bill-btn {
-    background-color: var(--primary);
-    color: var(--on-primary);
     margin-top: var(--spacing-4);
     width: 100%;
 }
@@ -687,18 +740,12 @@ button:active {
     position: relative;
 }
 
-.master-bill-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-4);
-    cursor: pointer;
-}
-
 #masterListContainer {
-    max-height: 1000px;
     overflow: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
+    background-color: var(--surface-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
 }
 
 #masterListContainer.hidden {
@@ -706,20 +753,6 @@ button:active {
     padding-top: 0;
     padding-bottom: 0;
     overflow: hidden;
-}
-
-.master-bill-header h2 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-primary);
-}
-
-#masterListContainer {
-    background-color: var(--surface-light);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-4);
-    transition: max-height 0.3s ease, padding 0.3s ease;
 }
 
 #masterList {
@@ -761,61 +794,13 @@ button:active {
     color: var(--text-primary);
 }
 
-.delete-btn {
-    font-family: 'Material Icons Round';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px !important;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    display: inline-block;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-}
-
-.delete-btn:hover {
-    background-color: var(--negative-light);
-}
-
-/* Bill and list toggles */
-#toggleMasterList, #toggleAllCycles {
-    display: flex;
-    align-items: center;
-    margin-bottom: var(--spacing-4);
-}
-
-#toggleMasterList .material-icons-round, 
-#toggleAllCycles .material-icons-round {
-    margin-right: var(--spacing-2);
-}
-
 /* Pay Cycles */
 .pay-cycles-section {
     position: relative;
-}
-
-.pay-cycles-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-4);
-    cursor: pointer;
-}
-
-.pay-cycles-header h2 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-primary);
+    margin-top: var(--spacing-5);
 }
 
 #payCycles {
-    max-height: 1000px;
     overflow: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
     background-color: var(--surface-light);
@@ -872,7 +857,6 @@ button:active {
 }
 
 .cycle-content {
-    max-height: 1000px;
     overflow: hidden;
     transition: max-height 0.3s ease;
     padding: var(--spacing-4);
@@ -965,21 +949,6 @@ button:active {
     color: var(--text-primary);
 }
 
-/* Additional settings */
-#payCycleSettings {
-    background-color: var(--surface-light);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-4);
-    margin-bottom: var(--spacing-4);
-}
-
-#billForm {
-    background-color: var(--surface-light);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-4);
-    margin-top: var(--spacing-4);
-}
-
 /* Weekday selector for custom frequency */
 #weekdaySelector {
     display: none;
@@ -1007,7 +976,7 @@ button:active {
 /* ==============================================
  * MODAL STYLES
  * ============================================== */
-.modal {
+.app-modal {
     display: none;
     position: fixed;
     z-index: 1000;
@@ -1090,6 +1059,7 @@ button:active {
     left: 50%;
     bottom: 30px;
     transform: translateX(-50%);
+    box-shadow: var(--shadow-lg);
 }
 
 #snackbar.show {
@@ -1215,11 +1185,6 @@ button:active {
     
     .period-actions button {
         width: 100%;
-    }
-    
-    /* Settings layout */
-    .settings-container {
-        grid-template-columns: 1fr;
     }
     
     /* Table adjustments */

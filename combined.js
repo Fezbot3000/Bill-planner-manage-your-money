@@ -1,4 +1,3 @@
-// Combined Finance App - JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     // Initialize both applications
@@ -89,7 +88,7 @@ function setupModalControls() {
     const closeButtons = document.querySelectorAll('.close-modal, .close');
     closeButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const modal = this.closest('.modal');
+            const modal = this.closest('.app-modal') || this.closest('.modal');
             if (modal) {
                 modal.style.display = 'none';
             }
@@ -98,7 +97,7 @@ function setupModalControls() {
     
     // Close modals when clicking outside
     window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
+        if (event.target.classList.contains('app-modal') || event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
         }
     });
@@ -191,7 +190,7 @@ function setupImportExport() {
 }
 
 function closeAllModals() {
-    const modals = document.querySelectorAll('.modal');
+    const modals = document.querySelectorAll('.app-modal, .modal');
     modals.forEach(modal => {
         modal.style.display = 'none';
     });
@@ -339,661 +338,6 @@ function showSnackbar(message) {
 }
 
 // ==========================================
-// Interest-Free Tracker Class
-// ==========================================
-class InterestFreeTracker {
-    constructor() {
-        // DOM Elements
-        this.billingPeriodsContainer = document.getElementById('billing-periods');
-        this.addPeriodBtn = document.getElementById('add-period-btn');
-        this.createCustomPeriodBtn = document.getElementById('create-custom-period-btn');
-        this.startDateInput = document.getElementById('start-date');
-        this.endDateInput = document.getElementById('end-date');
-        this.interestFreeDaysInput = document.getElementById('interest-free-days');
-        this.transactionModal = document.getElementById('transaction-modal');
-        this.paymentModal = document.getElementById('payment-modal');
-        this.editPeriodModal = document.getElementById('edit-period-modal');
-        this.transactionForm = document.getElementById('transaction-form');
-        this.paymentForm = document.getElementById('payment-form');
-        this.editPeriodForm = document.getElementById('edit-period-form');
-        this.editStartDateInput = document.getElementById('edit-start-date');
-        this.editEndDateInput = document.getElementById('edit-end-date');
-        this.editInterestFreeDaysInput = document.getElementById('edit-interest-free-days');
-        
-        if (!this.billingPeriodsContainer) return; // Exit if elements not found
-        
-        // Current state
-        this.billingPeriods = this.loadBillingPeriods();
-        this.currentPeriod = null;
-
-        // Bind methods to ensure correct 'this' context
-        this.createCustomBillingPeriod = this.createCustomBillingPeriod.bind(this);
-        this.createDefaultBillingPeriod = this.createDefaultBillingPeriod.bind(this);
-        this.updateRemainingDays = this.updateRemainingDays.bind(this);
-        this.handleEditPeriodFormSubmit = this.handleEditPeriodFormSubmit.bind(this);
-        this.handleAddTransaction = this.handleAddTransaction.bind(this);
-        
-        // Event Listeners
-        if (this.addPeriodBtn) {
-            this.addPeriodBtn.addEventListener('click', this.createDefaultBillingPeriod);
-        }
-        
-        if (this.createCustomPeriodBtn) {
-            this.createCustomPeriodBtn.addEventListener('click', this.createCustomBillingPeriod);
-        }
-        
-        if (this.transactionForm) {
-            this.transactionForm.addEventListener('submit', (e) => this.handleAddTransaction(e, 'expense'));
-        }
-        
-        if (this.paymentForm) {
-            this.paymentForm.addEventListener('submit', (e) => this.handleAddTransaction(e, 'repayment'));
-        }
-        
-        if (this.editPeriodForm) {
-            this.editPeriodForm.addEventListener('submit', this.handleEditPeriodFormSubmit);
-        }
-        
-        document.querySelector('#edit-period-modal .close-modal').addEventListener('click', () => {
-            this.editPeriodModal.style.display = 'none';
-        });
-        
-        // Set default dates for custom period creation
-        this.setDefaultDates();
-
-        // Before rendering, migrate any existing billing periods
-        this.migrateBillingPeriods();
-        
-        // Migrate transactions to include unique IDs
-        this.migrateTransactionsWithIds();
-
-        // Render existing billing periods
-        this.renderExistingBillingPeriods();
-        
-        // Set up automatic updates for the remaining days
-        this.updateRemainingDays(); // Initial update
-        
-        // Update days every minute
-        this.dayUpdateInterval = setInterval(() => this.updateRemainingDays(), 60000);
-        
-        // Update days when tab becomes visible again
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                this.updateRemainingDays();
-            }
-        });
-    }
-    
-    migrateBillingPeriods() {
-        let migrated = false;
-        
-        this.billingPeriods.forEach(period => {
-            if (!period.interestFreeEndDate) {
-                // Calculate the interest-free end date
-                const startDateObj = new Date(period.startDate.split('-')[0], 
-                                             period.startDate.split('-')[1] - 1, 
-                                             period.startDate.split('-')[2]);
-                const endDateObj = new Date(startDateObj);
-                endDateObj.setDate(startDateObj.getDate() + period.interestFreePeriodDays - 1);
-                period.interestFreeEndDate = this.getInputDateFormat(endDateObj);
-                migrated = true;
-            }
-        });
-        
-        if (migrated) {
-            this.saveBillingPeriods();
-        }
-    }
-
-    migrateTransactionsWithIds() {
-        let migrated = false;
-        
-        this.billingPeriods.forEach(period => {
-            if (period.transactions && period.transactions.length > 0) {
-                period.transactions.forEach((transaction, index) => {
-                    if (!transaction.id) {
-                        // Generate a unique ID for the transaction
-                        transaction.id = `transaction-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
-                        migrated = true;
-                    }
-                });
-            }
-        });
-        
-        if (migrated) {
-            this.saveBillingPeriods();
-        }
-    }
-
-    // Save billing periods to localStorage
-    saveBillingPeriods() {
-        localStorage.setItem('billingPeriods', JSON.stringify(this.billingPeriods));
-    }
-
-    // Load billing periods from localStorage
-    loadBillingPeriods() {
-        const savedPeriods = localStorage.getItem('billingPeriods');
-        return savedPeriods ? JSON.parse(savedPeriods) : [];
-    }
-
-    // Render existing billing periods when page loads
-    renderExistingBillingPeriods() {
-        if (!this.billingPeriodsContainer) return;
-        
-        this.billingPeriodsContainer.innerHTML = '';
-        
-        // Ensure we're working with the latest data
-        this.billingPeriods = this.loadBillingPeriods();
-        
-        // Sort periods by start date (newest first)
-        const sortedPeriods = [...this.billingPeriods].sort((a, b) => {
-            return new Date(b.startDate) - new Date(a.startDate);
-        });
-        
-        sortedPeriods.forEach(period => this.renderBillingPeriod(period));
-    }
-
-    setDefaultDates() {
-        if (!this.startDateInput || !this.endDateInput) return;
-        
-        const startDate = new Date();
-        startDate.setDate(10);
-        this.startDateInput.value = this.getInputDateFormat(startDate);
-
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(9);
-        this.endDateInput.value = this.getInputDateFormat(endDate);
-    }
-
-    createDefaultBillingPeriod() {
-        if (!this.startDateInput || !this.endDateInput || !this.interestFreeDaysInput) return;
-        
-        this.createBillingPeriod(
-            this.startDateInput.value,
-            this.endDateInput.value,
-            parseInt(this.interestFreeDaysInput.value) || 55
-        );
-    }
-
-    createCustomBillingPeriod() {
-        if (!this.startDateInput || !this.endDateInput || !this.interestFreeDaysInput) return;
-        
-        const startDate = this.startDateInput.value;
-        const endDate = this.endDateInput.value;
-        const interestFreeDays = parseInt(this.interestFreeDaysInput.value, 10) || 55;
-
-        if (!startDate || !endDate) {
-            alert('Please select both start and end dates');
-            return;
-        }
-        if (new Date(startDate) > new Date(endDate)) {
-            alert('Start date must be before end date');
-            return;
-        }
-        this.createBillingPeriod(startDate, endDate, interestFreeDays);
-    }
-
-    createBillingPeriod(startDate, endDate, interestFreeDays) {
-        // Calculate the actual interest-free end date for internal tracking
-        const startDateObj = new Date(startDate);
-        const interestFreeEndDate = new Date(startDateObj);
-        interestFreeEndDate.setDate(startDateObj.getDate() + interestFreeDays - 1); // -1 because day 1 counts
-        
-        const period = {
-            id: `period-${Date.now()}`,
-            startDate,
-            endDate,
-            interestFreePeriodDays: interestFreeDays,
-            interestFreeEndDate: this.getInputDateFormat(interestFreeEndDate), // Store the actual interest-free end date
-            transactions: []
-        };
-        
-        this.billingPeriods.push(period);
-        this.renderBillingPeriod(period);
-        this.currentPeriod = period;
-        this.saveBillingPeriods();
-        this.setDefaultDates();
-    }
-
-    deleteBillingPeriod(periodId) {
-    // Show confirmation dialog
-    if (confirm('Are you sure you want to delete this billing period? This action cannot be undone.')) {
-        // Find the period index
-        const periodIndex = this.billingPeriods.findIndex(p => p.id === periodId);
-        
-        if (periodIndex !== -1) {
-            // Remove the period from the array
-            this.billingPeriods.splice(periodIndex, 1);
-            
-            // Save updated periods
-            this.saveBillingPeriods();
-            
-            // Re-render the billing periods
-            this.renderExistingBillingPeriods();
-            
-            // Show success message
-            showSnackbar("Billing period deleted successfully");
-        }
-    }
-}
-    
-    renderBillingPeriod(period) {
-        const totalOwing = this.calculateTotalOwing(period);
-        const daysRemaining = this.calculateRemainingDays(period);
-        const status = daysRemaining > 0 ? 'Active' : 'Expired';
-        
-        // Get the date objects for display formatting
-        const startDateObj = new Date(period.startDate);
-        const endDateObj = new Date(period.endDate);
-        
-        // Display dates in the human-readable format
-        const formattedStartDate = this.formatDate(startDateObj);
-        const formattedEndDate = this.formatDate(endDateObj);
-        
-        // Calculate the interest-free end date if it doesn't exist
-        let interestFreeEndDate = period.interestFreeEndDate;
-        if (!interestFreeEndDate) {
-            const endDateObj = new Date(startDateObj);
-            endDateObj.setDate(startDateObj.getDate() + period.interestFreePeriodDays - 1);
-            interestFreeEndDate = this.getInputDateFormat(endDateObj);
-            
-            // Save this for future reference
-            period.interestFreeEndDate = interestFreeEndDate;
-            this.saveBillingPeriods();
-        }
-        
-        // Format the interest-free end date for display
-        const interestFreeEndDateObj = new Date(interestFreeEndDate);
-        const formattedInterestFreeEndDate = this.formatDate(interestFreeEndDateObj);
-
-        const periodElement = document.createElement('div');
-        periodElement.classList.add('billing-period');
-        periodElement.dataset.periodId = period.id;
-
-        periodElement.innerHTML = `
-                <div class="header-container">
-                    <h2>
-                        Billing Period ${this.billingPeriods.indexOf(period) + 1}
-                        <span>${formattedStartDate} to ${formattedEndDate}</span>
-                    </h2>
-                    <div class="period-buttons">
-                        <button class="edit-period-btn" data-period-id="${period.id}">
-                            <span class="edit-icon"></span>
-                            Edit
-                        </button>
-                        <button class="delete-period-btn" data-period-id="${period.id}">
-                            <span class="material-icons-round">delete</span>
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            <div class="period-info">
-                <p>Interest-free until: ${formattedInterestFreeEndDate} (${period.interestFreePeriodDays} days)</p>
-            </div>
-            <div class="period-details">
-                <div class="detail-item">
-                    <span class="detail-label">Days Remaining</span>
-                    <span class="detail-value">${daysRemaining}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Interest-Free Period</span>
-                    <span class="detail-value">${period.interestFreePeriodDays} days</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Total Owing</span>
-                    <span class="detail-value">$${totalOwing.toFixed(2)}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Status</span>
-                    <span class="detail-value">${status}</span>
-                </div>
-            </div>
-            <div class="period-actions">
-                <button class="add-transaction-btn" data-period-id="${period.id}">Add Transaction</button>
-                <button class="add-repayment-btn" data-period-id="${period.id}">Add Repayment</button>
-            </div>
-            <div class="responsive-table-container">
-                <table class="transactions-table">
-                    <thead>
-                        <tr>
-                            <th>DATE</th>
-                            <th>DESCRIPTION</th>
-                            <th>AMOUNT</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody class="transactions-body">
-                        ${this.renderTransactions(period.transactions, period.id)}
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-
-        // Add event listeners for buttons
-periodElement.querySelector('.add-transaction-btn').addEventListener('click', (e) => {
-    this.currentPeriod = this.billingPeriods.find(p => p.id === e.currentTarget.dataset.periodId);
-    this.openTransactionModal('expense');
-});
-
-periodElement.querySelector('.add-repayment-btn').addEventListener('click', (e) => {
-    this.currentPeriod = this.billingPeriods.find(p => p.id === e.currentTarget.dataset.periodId);
-    this.openTransactionModal('repayment');
-});
-
-periodElement.querySelector('.edit-period-btn').addEventListener('click', (e) => {
-    this.openEditPeriodModal(e.currentTarget.dataset.periodId);
-});
-
-// New event listener for the delete button
-periodElement.querySelector('.delete-period-btn').addEventListener('click', (e) => {
-    this.deleteBillingPeriod(e.currentTarget.dataset.periodId);
-});
-
-        this.billingPeriodsContainer.appendChild(periodElement);
-        
-        // Add delete transaction event listeners
-        this.addDeleteEventListeners(period.id);
-    }
-
-    renderTransactions(transactions, periodId) {
-        if (!transactions || transactions.length === 0) {
-            return '';
-        }
-        
-        // Sort transactions by date (newest first)
-        const sortedTransactions = [...transactions].sort((a, b) => {
-            return new Date(b.date) - new Date(a.date);
-        });
-        
-        return sortedTransactions.map((transaction) => {
-            // Format the transaction date
-            const transactionDateObj = new Date(transaction.date);
-            const formattedDate = this.formatDate(transactionDateObj);
-            
-            // Ensure transaction has an ID (for compatibility with old data)
-            const transactionId = transaction.id || `transaction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            
-            return `
-            <tr>
-                <td>${formattedDate}</td>
-                <td>${transaction.description}</td>
-                <td data-type="${transaction.type}">${transaction.type === 'repayment' ? '-$' : '$'}${Math.abs(parseFloat(transaction.amount)).toFixed(2)}</td>
-                <td>
-                    <button class="delete-transaction-btn" data-period-id="${periodId}" data-transaction-id="${transactionId}">
-                        <span class="material-icons-round" style="font-size: 14px;">delete</span>
-                    </button>
-                </td>
-            </tr>
-        `}).join('');
-    }
-
-    calculateRemainingDays(period) {
-        // Parse dates using local date parts to ensure consistent timezone handling
-        const [startYear, startMonth, startDay] = period.startDate.split('-').map(Number);
-        
-        // Create start date in local time, months are 0-indexed in JS Date
-        const startDate = new Date(startYear, startMonth - 1, startDay);
-        
-        // Get current date with time set to midnight
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        // Calculate milliseconds per day
-        const msPerDay = 24 * 60 * 60 * 1000;
-        
-        // Calculate days elapsed (including the start day)
-        const daysDiff = Math.floor((today - startDate) / msPerDay);
-        
-        // Calculate the interest-free days remaining
-        const daysRemaining = period.interestFreePeriodDays - daysDiff;
-        
-        return Math.max(0, daysRemaining);
-    }
-    
-    updateRemainingDays() {
-        // Force a full re-render to update the days
-        this.renderExistingBillingPeriods();
-    }
-
-    calculateTotalOwing(period) {
-        return period.transactions.reduce((total, transaction) => {
-            return transaction.type === 'repayment'
-                ? total - parseFloat(transaction.amount)
-                : total + parseFloat(transaction.amount);
-        }, 0);
-    }
-
-    openTransactionModal(type) {
-        if (type === 'expense') {
-            this.transactionModal.style.display = 'block';
-            document.getElementById('transaction-date').value = this.getInputDateFormat(new Date());
-        } else if (type === 'repayment') {
-            this.paymentModal.style.display = 'block';
-            document.getElementById('payment-date').value = this.getInputDateFormat(new Date());
-        }
-        
-        // Ensure the modal is scrollable on mobile
-        document.body.style.overflow = 'hidden';
-        document.querySelector(type === 'expense' ? '#transaction-modal' : '#payment-modal').style.overflowY = 'auto';
-        document.querySelector(type === 'expense' ? '#transaction-modal' : '#payment-modal').style.webkitOverflowScrolling = 'touch';
-    }
-
-    closeModals() {
-        this.transactionModal.style.display = 'none';
-        this.paymentModal.style.display = 'none';
-        this.editPeriodModal.style.display = 'none';
-        this.transactionForm.reset();
-        this.paymentForm.reset();
-        this.editPeriodForm.reset();
-        
-        // Restore body scrolling
-        document.body.style.overflow = '';
-    }
-
-    handleAddTransaction(e, type) {
-        e.preventDefault();
-
-        if (!this.currentPeriod) {
-            return;
-        }
-
-        const form = type === 'expense' ? this.transactionForm : this.paymentForm;
-        const dateInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-date`);
-        const amountInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-amount`);
-        const descInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-description`);
-
-        const transaction = {
-            id: `transaction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            date: dateInput.value,
-            amount: amountInput.value,
-            description: descInput.value || (type === 'expense' ? 'Transaction' : 'Payment'),
-            type: type // 'expense' or 'repayment'
-        };
-
-        // Validate date
-        const transactionDate = new Date(transaction.date);
-        const periodStartDate = new Date(this.currentPeriod.startDate);
-        const periodEndDate = new Date(this.currentPeriod.endDate);
-        
-        if (transactionDate < periodStartDate || transactionDate > periodEndDate) {
-            alert(`Date must be between ${this.formatDate(periodStartDate)} and ${this.formatDate(periodEndDate)}`);
-            return;
-        }
-
-        // Find the period in the array by ID to ensure we're updating the correct one
-        const periodIndex = this.billingPeriods.findIndex(p => p.id === this.currentPeriod.id);
-        if (periodIndex === -1) {
-            return;
-        }
-        
-        // Add transaction to the period in the array
-        this.billingPeriods[periodIndex].transactions.push(transaction);
-        
-        // Update our current period reference
-        this.currentPeriod = this.billingPeriods[periodIndex];
-
-        // Save before updating UI
-        this.saveBillingPeriods();
-        
-        // Update UI
-        this.updatePeriodDisplay(this.currentPeriod);
-
-        // Close modal
-        this.closeModals();
-    }
-
-    updatePeriodDisplay(period) {
-        const periodElement = document.querySelector(`[data-period-id="${period.id}"]`);
-        if (!periodElement) {
-            return;
-        }
-        
-        const transactionsBody = periodElement.querySelector('.transactions-body');
-        const totalOwingElement = periodElement.querySelector('.detail-item:nth-child(3) .detail-value');
-        
-        transactionsBody.innerHTML = this.renderTransactions(period.transactions, period.id);
-        
-        // Add event listeners to the delete buttons
-        this.addDeleteEventListeners(period.id);
-        
-        const totalOwing = this.calculateTotalOwing(period);
-        totalOwingElement.textContent = `$${totalOwing.toFixed(2)}`;
-    }
-
-    addDeleteEventListeners(periodId) {
-        const periodElement = document.querySelector(`[data-period-id="${periodId}"]`);
-        if (!periodElement) {
-            return;
-        }
-        
-        const deleteButtons = periodElement.querySelectorAll('.delete-transaction-btn');
-        
-        deleteButtons.forEach((btn) => {
-            // First remove any existing listeners to avoid duplicates
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            // Now add the event listener to the fresh button with increased touch target size
-            newBtn.style.padding = '8px';
-            newBtn.style.minWidth = '30px';
-            newBtn.style.minHeight = '30px';
-            
-            newBtn.addEventListener('click', (e) => {
-                const periodId = e.currentTarget.dataset.periodId;
-                const transactionId = e.currentTarget.dataset.transactionId;
-                this.deleteTransaction(periodId, transactionId);
-            });
-        });
-    }
-
-    deleteTransaction(periodId, transactionId) {
-        const period = this.billingPeriods.find(p => p.id === periodId);
-        if (!period) return;
-
-        if (confirm('Are you sure you want to delete this transaction?')) {
-            const transactionIndex = period.transactions.findIndex(t => t.id === transactionId);
-            if (transactionIndex !== -1) {
-                period.transactions.splice(transactionIndex, 1);
-                this.saveBillingPeriods();
-                this.updatePeriodDisplay(period);
-            }
-        }
-    }
-
-    // Method to open the edit period modal
-    openEditPeriodModal(periodId) {
-        this.currentPeriod = this.billingPeriods.find(p => p.id === periodId);
-        
-        if (!this.currentPeriod) return;
-        
-        // Populate form fields with current values
-        this.editStartDateInput.value = this.currentPeriod.startDate;
-        this.editEndDateInput.value = this.currentPeriod.endDate;
-        this.editInterestFreeDaysInput.value = this.currentPeriod.interestFreePeriodDays;
-        
-        // Display the modal
-        this.editPeriodModal.style.display = 'block';
-        
-        // Ensure the modal is scrollable on mobile
-        document.body.style.overflow = 'hidden';
-        document.querySelector('#edit-period-modal').style.overflowY = 'auto';
-        document.querySelector('#edit-period-modal').style.webkitOverflowScrolling = 'touch';
-    }
-
-    // Method to handle form submission for editing a period
-    handleEditPeriodFormSubmit(e) {
-        e.preventDefault();
-        
-        if (!this.currentPeriod) return;
-        
-        const startDate = this.editStartDateInput.value;
-        const endDate = this.editEndDateInput.value;
-        const interestFreeDays = parseInt(this.editInterestFreeDaysInput.value, 10);
-        
-        if (!startDate || !endDate || isNaN(interestFreeDays)) {
-            alert('Please fill out all fields with valid values');
-            return;
-        }
-        
-        if (new Date(startDate) > new Date(endDate)) {
-            alert('Start date must be before end date');
-            return;
-        }
-        
-        // Calculate the new interest-free end date
-        const startDateObj = new Date(startDate);
-        const interestFreeEndDate = new Date(startDateObj);
-        interestFreeEndDate.setDate(startDateObj.getDate() + interestFreeDays - 1);
-        
-        // Update the current period
-        this.currentPeriod.startDate = startDate;
-        this.currentPeriod.endDate = endDate;
-        this.currentPeriod.interestFreePeriodDays = interestFreeDays;
-        this.currentPeriod.interestFreeEndDate = this.getInputDateFormat(interestFreeEndDate);
-        
-        // Save and update the UI
-        this.saveBillingPeriods();
-        this.renderExistingBillingPeriods();
-        
-        // Close the modal
-        this.editPeriodModal.style.display = 'none';
-        
-        // Restore body scrolling
-        document.body.style.overflow = '';
-    }
-
-    // Format a date as "9th Jan 2025"
-    formatDate(date) {
-        const day = date.getDate();
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = monthNames[date.getMonth()];
-        const year = date.getFullYear();
-        
-        // Add the appropriate suffix to the day
-        let suffix = 'th';
-        if (day === 1 || day === 21 || day === 31) {
-            suffix = 'st';
-        } else if (day === 2 || day === 22) {
-            suffix = 'nd';
-        } else if (day === 3 || day === 23) {
-            suffix = 'rd';
-        }
-        
-        return `${day}${suffix} ${month} ${year}`;
-    }
-
-    // Get YYYY-MM-DD format for form inputs and localStorage
-    getInputDateFormat(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-}
-
-// ==========================================
 // Bill Planner Class
 // ==========================================
 class BillPlanner {
@@ -1133,23 +477,22 @@ if (this.toggleMasterListBtn) {
     }
     
     // Update the toggle button text and icon
-    // Update the toggle button text and icon
-updateToggleButton(button, isHidden) {
-    if (!button) return;
-    
-    const iconElem = button.querySelector('.material-icons-round');
-    const textElem = button.querySelector('.btn-text');
-    
-    if (iconElem && textElem) {
-        if (isHidden) {
-            iconElem.textContent = 'visibility';
-            textElem.textContent = 'Show List';
-        } else {
-            iconElem.textContent = 'visibility_off';
-            textElem.textContent = 'Hide List';
+    updateToggleButton(button, isHidden) {
+        if (!button) return;
+        
+        const iconElem = button.querySelector('.material-icons-round');
+        const textElem = button.querySelector('.btn-text');
+        
+        if (iconElem && textElem) {
+            if (isHidden) {
+                iconElem.textContent = 'visibility';
+                textElem.textContent = 'Show List';
+            } else {
+                iconElem.textContent = 'visibility_off';
+                textElem.textContent = 'Hide List';
+            }
         }
     }
-}
     
     // Update the toggle all cycles button
     updateToggleAllButton(isExpanded) {
@@ -1482,7 +825,7 @@ updateToggleButton(button, isHidden) {
         // Create new date with normalized time
         return this.normalizeDate(new Date(targetYear, targetMonth, targetDay));
     }
-    
+
     // Finds the next occurrence of a specific day of the week
     getNextDayOfWeek(date, dayOfWeek) {
         const result = new Date(date);
@@ -1576,7 +919,7 @@ updateToggleButton(button, isHidden) {
         this.masterBills.forEach(bill => this.categorizeBill(bill));
         
         // Generate pay cycles
-        for (let i = 0; i < 6; i++) {  // Reduced from 29 to 6 cycles for better performance
+        for (let i = 0; i < 26; i++) {  // Reduced from 29 to 6 cycles for better performance
             let cycleEnd;
             
             // Set cycle end date based on frequency
@@ -1832,6 +1175,8 @@ updateToggleButton(button, isHidden) {
         });
 this.renderFinancialChart();
     }
+
+
     renderFinancialChart() {
     const chartCanvas = document.getElementById('financial-chart');
     if (!chartCanvas || !window.Chart || this.payCycles.length === 0) return;
@@ -1919,89 +1264,670 @@ this.renderFinancialChart();
 }
 }
 
+// ==========================================
+// Interest-Free Tracker Class
+// ==========================================
+class InterestFreeTracker {
+    constructor() {
+        // DOM Elements
+        this.billingPeriodsContainer = document.getElementById('billing-periods');
+        this.addPeriodBtn = document.getElementById('add-period-btn');
+        this.createCustomPeriodBtn = document.getElementById('create-custom-period-btn');
+        this.startDateInput = document.getElementById('start-date');
+        this.endDateInput = document.getElementById('end-date');
+        this.interestFreeDaysInput = document.getElementById('interest-free-days');
+        this.transactionModal = document.getElementById('transaction-modal');
+        this.paymentModal = document.getElementById('payment-modal');
+        this.editPeriodModal = document.getElementById('edit-period-modal');
+        this.transactionForm = document.getElementById('transaction-form');
+        this.paymentForm = document.getElementById('payment-form');
+        this.editPeriodForm = document.getElementById('edit-period-form');
+        this.editStartDateInput = document.getElementById('edit-start-date');
+        this.editEndDateInput = document.getElementById('edit-end-date');
+        this.editInterestFreeDaysInput = document.getElementById('edit-interest-free-days');
+        
+        if (!this.billingPeriodsContainer) return; // Exit if elements not found
+        
+        // Current state
+        this.billingPeriods = this.loadBillingPeriods();
+        this.currentPeriod = null;
 
+        // Bind methods to ensure correct 'this' context
+        this.createCustomBillingPeriod = this.createCustomBillingPeriod.bind(this);
+        this.createDefaultBillingPeriod = this.createDefaultBillingPeriod.bind(this);
+        this.updateRemainingDays = this.updateRemainingDays.bind(this);
+        this.handleEditPeriodFormSubmit = this.handleEditPeriodFormSubmit.bind(this);
+        this.handleAddTransaction = this.handleAddTransaction.bind(this);
+        
+        // Event Listeners
+        if (this.addPeriodBtn) {
+            this.addPeriodBtn.addEventListener('click', this.createDefaultBillingPeriod);
+        }
+        
+        if (this.createCustomPeriodBtn) {
+            this.createCustomPeriodBtn.addEventListener('click', this.createCustomBillingPeriod);
+        }
+        
+        if (this.transactionForm) {
+            this.transactionForm.addEventListener('submit', (e) => this.handleAddTransaction(e, 'expense'));
+        }
+        
+        if (this.paymentForm) {
+            this.paymentForm.addEventListener('submit', (e) => this.handleAddTransaction(e, 'repayment'));
+        }
+        
+        if (this.editPeriodForm) {
+            this.editPeriodForm.addEventListener('submit', this.handleEditPeriodFormSubmit);
+        }
+        
+        document.querySelector('#edit-period-modal .close-modal').addEventListener('click', () => {
+            this.editPeriodModal.style.display = 'none';
+        });
+        
+        // Set default dates for custom period creation
+        this.setDefaultDates();
 
-// Add external handler functions for HTML event attributes
-// These must be defined in the global scope
+        // Before rendering, migrate any existing billing periods
+        this.migrateBillingPeriods();
+        
+        // Migrate transactions to include unique IDs
+        this.migrateTransactionsWithIds();
 
-// Interest-Free Tracker handlers
-function openTransactionModal(type) {
-    if (window.interestFreeTracker) {
-        window.interestFreeTracker.openTransactionModal(type);
+        // Render existing billing periods
+        this.renderExistingBillingPeriods();
+        
+        // Set up automatic updates for the remaining days
+        this.updateRemainingDays(); // Initial update
+        
+        // Update days every minute
+        this.dayUpdateInterval = setInterval(() => this.updateRemainingDays(), 60000);
+        
+        // Update days when tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this.updateRemainingDays();
+            }
+        });
     }
-}
-
-// Bill Planner handlers
-function addBill() {
-    let name = document.getElementById("billName").value;
-    let amount = parseFloat(document.getElementById("billAmount").value);
-    let date = document.getElementById("billDate").value;
-    let frequency = document.getElementById("billFrequency").value;
-    let group = document.getElementById("billGroup").value;
     
-    if (name && amount && date && frequency && group) {
-        // For custom frequency, save the settings with the bill
-        let billData = { name, amount, date, frequency, group };
+    migrateBillingPeriods() {
+        let migrated = false;
         
-        if (frequency === "Custom" && window.billPlanner && window.billPlanner.customFrequencySettings) {
-            billData.customFrequency = window.billPlanner.customFrequencySettings;
+        this.billingPeriods.forEach(period => {
+            if (!period.interestFreeEndDate) {
+                // Calculate the interest-free end date
+                const startDateObj = new Date(period.startDate.split('-')[0], 
+                                             period.startDate.split('-')[1] - 1, 
+                                             period.startDate.split('-')[2]);
+                const endDateObj = new Date(startDateObj);
+                endDateObj.setDate(startDateObj.getDate() + period.interestFreePeriodDays - 1);
+                period.interestFreeEndDate = this.getInputDateFormat(endDateObj);
+                migrated = true;
+            }
+        });
+        
+        if (migrated) {
+            this.saveBillingPeriods();
+        }
+    }
+
+    migrateTransactionsWithIds() {
+        let migrated = false;
+        
+        this.billingPeriods.forEach(period => {
+            if (period.transactions && period.transactions.length > 0) {
+                period.transactions.forEach((transaction, index) => {
+                    if (!transaction.id) {
+                        // Generate a unique ID for the transaction
+                        transaction.id = `transaction-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+                        migrated = true;
+                    }
+                });
+            }
+        });
+        
+        if (migrated) {
+            this.saveBillingPeriods();
+        }
+    }
+
+    // Save billing periods to localStorage
+    saveBillingPeriods() {
+        localStorage.setItem('billingPeriods', JSON.stringify(this.billingPeriods));
+    }
+
+    // Load billing periods from localStorage
+    loadBillingPeriods() {
+        const savedPeriods = localStorage.getItem('billingPeriods');
+        return savedPeriods ? JSON.parse(savedPeriods) : [];
+    }
+
+    // Render existing billing periods when page loads
+    renderExistingBillingPeriods() {
+        if (!this.billingPeriodsContainer) return;
+        
+        this.billingPeriodsContainer.innerHTML = '';
+        
+        // Ensure we're working with the latest data
+        this.billingPeriods = this.loadBillingPeriods();
+        
+        // Sort periods by start date (newest first)
+        const sortedPeriods = [...this.billingPeriods].sort((a, b) => {
+            return new Date(b.startDate) - new Date(a.startDate);
+        });
+        
+        sortedPeriods.forEach(period => this.renderBillingPeriod(period));
+    }
+
+    setDefaultDates() {
+        if (!this.startDateInput || !this.endDateInput) return;
+        
+        const startDate = new Date();
+        startDate.setDate(10);
+        this.startDateInput.value = this.getInputDateFormat(startDate);
+
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(9);
+        this.endDateInput.value = this.getInputDateFormat(endDate);
+    }
+
+    createDefaultBillingPeriod() {
+        if (!this.startDateInput || !this.endDateInput || !this.interestFreeDaysInput) return;
+        
+        this.createBillingPeriod(
+            this.startDateInput.value,
+            this.endDateInput.value,
+            parseInt(this.interestFreeDaysInput.value) || 55
+        );
+    }
+
+    createCustomBillingPeriod() {
+        if (!this.startDateInput || !this.endDateInput || !this.interestFreeDaysInput) return;
+        
+        const startDate = this.startDateInput.value;
+        const endDate = this.endDateInput.value;
+        const interestFreeDays = parseInt(this.interestFreeDaysInput.value, 10) || 55;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+        if (new Date(startDate) > new Date(endDate)) {
+            alert('Start date must be before end date');
+            return;
+        }
+        this.createBillingPeriod(startDate, endDate, interestFreeDays);
+    }
+
+    createBillingPeriod(startDate, endDate, interestFreeDays) {
+        // Calculate the actual interest-free end date for internal tracking
+        const startDateObj = new Date(startDate);
+        const interestFreeEndDate = new Date(startDateObj);
+        interestFreeEndDate.setDate(startDateObj.getDate() + interestFreeDays - 1); // -1 because day 1 counts
+        
+        const period = {
+            id: `period-${Date.now()}`,
+            startDate,
+            endDate,
+            interestFreePeriodDays: interestFreeDays,
+            interestFreeEndDate: this.getInputDateFormat(interestFreeEndDate), // Store the actual interest-free end date
+            transactions: []
+        };
+        
+        this.billingPeriods.push(period);
+        this.renderBillingPeriod(period);
+        this.currentPeriod = period;
+        this.saveBillingPeriods();
+        this.setDefaultDates();
+    }
+
+    deleteBillingPeriod(periodId) {
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to delete this billing period? This action cannot be undone.')) {
+            // Find the period index
+            const periodIndex = this.billingPeriods.findIndex(p => p.id === periodId);
+            
+            if (periodIndex !== -1) {
+                // Remove the period from the array
+                this.billingPeriods.splice(periodIndex, 1);
+                
+                // Save updated periods
+                this.saveBillingPeriods();
+                
+                // Re-render the billing periods
+                this.renderExistingBillingPeriods();
+                
+                // Show success message
+                showSnackbar("Billing period deleted successfully");
+            }
+        }
+    }
+    
+    renderBillingPeriod(period) {
+        const totalOwing = this.calculateTotalOwing(period);
+        const daysRemaining = this.calculateRemainingDays(period);
+        const status = daysRemaining > 0 ? 'Active' : 'Expired';
+        
+        // Get the date objects for display formatting
+        const startDateObj = new Date(period.startDate);
+        const endDateObj = new Date(period.endDate);
+        
+        // Display dates in the human-readable format
+        const formattedStartDate = this.formatDate(startDateObj);
+        const formattedEndDate = this.formatDate(endDateObj);
+        
+        // Calculate the interest-free end date if it doesn't exist
+        let interestFreeEndDate = period.interestFreeEndDate;
+        if (!interestFreeEndDate) {
+            const endDateObj = new Date(startDateObj);
+            endDateObj.setDate(startDateObj.getDate() + period.interestFreePeriodDays - 1);
+            interestFreeEndDate = this.getInputDateFormat(endDateObj);
+            
+            // Save this for future reference
+            period.interestFreeEndDate = interestFreeEndDate;
+            this.saveBillingPeriods();
         }
         
-        // Store the bill in localStorage directly
-        let masterBills = [];
-        const storedData = localStorage.getItem('billData');
-        if (storedData) {
-            masterBills = JSON.parse(storedData);
+        // Format the interest-free end date for display
+        const interestFreeEndDateObj = new Date(interestFreeEndDate);
+        const formattedInterestFreeEndDate = this.formatDate(interestFreeEndDateObj);
+
+        const periodElement = document.createElement('div');
+        periodElement.classList.add('billing-period', 'app-card');
+        periodElement.dataset.periodId = period.id;
+
+        periodElement.innerHTML = `
+            <div class="header-container">
+                <h2>
+                    Billing Period ${this.billingPeriods.indexOf(period) + 1}
+                    <span>${formattedStartDate} to ${formattedEndDate}</span>
+                </h2>
+                <div class="period-buttons">
+                    <button class="edit-period-btn app-btn app-btn-secondary" data-period-id="${period.id}">
+                        <span class="edit-icon"></span>
+                        Edit
+                    </button>
+                    <button class="delete-period-btn app-btn app-btn-delete" data-period-id="${period.id}">
+                        <span class="material-icons-round">delete</span>
+                        Delete
+                    </button>
+                </div>
+            </div>
+            <div class="period-info">
+                <p>Interest-free until: ${formattedInterestFreeEndDate} (${period.interestFreePeriodDays} days)</p>
+            </div>
+            <div class="period-details">
+                <div class="detail-item">
+                    <span class="detail-label">Days Remaining</span>
+                    <span class="detail-value">${daysRemaining}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Interest-Free Period</span>
+                    <span class="detail-value">${period.interestFreePeriodDays} days</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Total Owing</span>
+                    <span class="detail-value">$${totalOwing.toFixed(2)}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">${status}</span>
+                </div>
+            </div>
+            <div class="period-actions">
+                <button class="add-transaction-btn app-btn app-btn-primary" data-period-id="${period.id}">Add Transaction</button>
+                <button class="add-repayment-btn app-btn app-btn-primary" data-period-id="${period.id}">Add Repayment</button>
+            </div>
+            <div class="responsive-table-container">
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>DESCRIPTION</th>
+                            <th>AMOUNT</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody class="transactions-body">
+                        ${this.renderTransactions(period.transactions, period.id)}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+
+        // Add event listeners for buttons
+        periodElement.querySelector('.add-transaction-btn').addEventListener('click', (e) => {
+            this.currentPeriod = this.billingPeriods.find(p => p.id === e.currentTarget.dataset.periodId);
+            this.openTransactionModal('expense');
+        });
+
+        periodElement.querySelector('.add-repayment-btn').addEventListener('click', (e) => {
+            this.currentPeriod = this.billingPeriods.find(p => p.id === e.currentTarget.dataset.periodId);
+            this.openTransactionModal('repayment');
+        });
+
+        periodElement.querySelector('.edit-period-btn').addEventListener('click', (e) => {
+            this.openEditPeriodModal(e.currentTarget.dataset.periodId);
+        });
+
+        // New event listener for the delete button
+        periodElement.querySelector('.delete-period-btn').addEventListener('click', (e) => {
+            this.deleteBillingPeriod(e.currentTarget.dataset.periodId);
+        });
+
+        this.billingPeriodsContainer.appendChild(periodElement);
+        
+        // Add delete transaction event listeners
+        this.addDeleteEventListeners(period.id);
+    }
+
+    renderTransactions(transactions, periodId) {
+        if (!transactions || transactions.length === 0) {
+            return '';
         }
         
-        masterBills.push(billData);
-        localStorage.setItem('billData', JSON.stringify(masterBills));
+        // Sort transactions by date (newest first)
+        const sortedTransactions = [...transactions].sort((a, b) => {
+            return new Date(b.date) - new Date(a.date);
+        });
         
-        // Clear form fields
-        document.getElementById("billName").value = "";
-        document.getElementById("billAmount").value = "";
+        return sortedTransactions.map((transaction) => {
+            // Format the transaction date
+            const transactionDateObj = new Date(transaction.date);
+            const formattedDate = this.formatDate(transactionDateObj);
+            
+            // Ensure transaction has an ID (for compatibility with old data)
+            const transactionId = transaction.id || `transaction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            return `
+            <tr>
+                <td>${formattedDate}</td>
+                <td>${transaction.description}</td>
+                <td data-type="${transaction.type}">${transaction.type === 'repayment' ? '-$' : '$'}${Math.abs(parseFloat(transaction.amount)).toFixed(2)}</td>
+                <td>
+                    <button class="delete-transaction-btn app-btn app-btn-delete" data-period-id="${periodId}" data-transaction-id="${transactionId}">
+                        <span class="material-icons-round" style="font-size: 14px;">delete</span>
+                    </button>
+                </td>
+            </tr>
+        `}).join('');
+    }
+
+    calculateRemainingDays(period) {
+        // Parse dates using local date parts to ensure consistent timezone handling
+        const [startYear, startMonth, startDay] = period.startDate.split('-').map(Number);
         
-        // Force reload the bill planner data and UI
-        if (window.billPlanner) {
-            window.billPlanner.loadData();
-            window.billPlanner.updateUI();
-        } else {
-            // Fallback - reload the page
-            location.reload();
+        // Create start date in local time, months are 0-indexed in JS Date
+        const startDate = new Date(startYear, startMonth - 1, startDay);
+        
+        // Get current date with time set to midnight
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        // Calculate milliseconds per day
+        const msPerDay = 24 * 60 * 60 * 1000;
+        
+        // Calculate days elapsed (including the start day)
+        const daysDiff = Math.floor((today - startDate) / msPerDay);
+        
+        // Calculate the interest-free days remaining
+        const daysRemaining = period.interestFreePeriodDays - daysDiff;
+        
+        return Math.max(0, daysRemaining);
+    }
+    
+    updateRemainingDays() {
+        // Force a full re-render to update the days
+        this.renderExistingBillingPeriods();
+    }
+
+    calculateTotalOwing(period) {
+        return period.transactions.reduce((total, transaction) => {
+            return transaction.type === 'repayment'
+                ? total - parseFloat(transaction.amount)
+                : total + parseFloat(transaction.amount);
+        }, 0);
+    }
+
+    openTransactionModal(type) {
+        if (type === 'expense') {
+            this.transactionModal.style.display = 'block';
+            document.getElementById('transaction-date').value = this.getInputDateFormat(new Date());
+        } else if (type === 'repayment') {
+            this.paymentModal.style.display = 'block';
+            document.getElementById('payment-date').value = this.getInputDateFormat(new Date());
         }
         
-        // Show success feedback
-        showSnackbar("Bill added successfully!");
-    } else {
-        alert("Please fill in all fields");
+        // Ensure the modal is scrollable on mobile
+        document.body.style.overflow = 'hidden';
+        document.querySelector(type === 'expense' ? '#transaction-modal' : '#payment-modal').style.overflowY = 'auto';
+        document.querySelector(type === 'expense' ? '#transaction-modal' : '#payment-modal').style.webkitOverflowScrolling = 'touch';
+    }
+
+    closeModals() {
+        this.transactionModal.style.display = 'none';
+        this.paymentModal.style.display = 'none';
+        this.editPeriodModal.style.display = 'none';
+        this.transactionForm.reset();
+        this.paymentForm.reset();
+        this.editPeriodForm.reset();
+        
+        // Restore body scrolling
+        document.body.style.overflow = '';
+    }
+
+    handleAddTransaction(e, type) {
+        e.preventDefault();
+
+        if (!this.currentPeriod) {
+            return;
+        }
+
+        const form = type === 'expense' ? this.transactionForm : this.paymentForm;
+        const dateInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-date`);
+        const amountInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-amount`);
+        const descInput = form.querySelector(`#${type === 'expense' ? 'transaction' : 'payment'}-description`);
+
+        const transaction = {
+            id: `transaction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: dateInput.value,
+            amount: amountInput.value,
+            description: descInput.value || (type === 'expense' ? 'Transaction' : 'Payment'),
+            type: type // 'expense' or 'repayment'
+        };
+
+        // Validate date
+        const transactionDate = new Date(transaction.date);
+        const periodStartDate = new Date(this.currentPeriod.startDate);
+        const periodEndDate = new Date(this.currentPeriod.endDate);
+        
+        if (transactionDate < periodStartDate || transactionDate > periodEndDate) {
+            alert(`Date must be between ${this.formatDate(periodStartDate)} and ${this.formatDate(periodEndDate)}`);
+            return;
+        }
+
+        // Find the period in the array by ID to ensure we're updating the correct one
+        const periodIndex = this.billingPeriods.findIndex(p => p.id === this.currentPeriod.id);
+        if (periodIndex === -1) {
+            return;
+        }
+        
+        // Add transaction to the period in the array
+        this.billingPeriods[periodIndex].transactions.push(transaction);
+        
+        // Update our current period reference
+        this.currentPeriod = this.billingPeriods[periodIndex];
+
+        // Save before updating UI
+        this.saveBillingPeriods();
+        
+        // Update UI
+        this.updatePeriodDisplay(this.currentPeriod);
+
+        // Close modal
+        this.closeModals();
+    }
+
+    updatePeriodDisplay(period) {
+        const periodElement = document.querySelector(`[data-period-id="${period.id}"]`);
+        if (!periodElement) {
+            return;
+        }
+        
+        const transactionsBody = periodElement.querySelector('.transactions-body');
+        const totalOwingElement = periodElement.querySelector('.detail-item:nth-child(3) .detail-value');
+        
+        transactionsBody.innerHTML = this.renderTransactions(period.transactions, period.id);
+        
+        // Add event listeners to the delete buttons
+        this.addDeleteEventListeners(period.id);
+        
+        const totalOwing = this.calculateTotalOwing(period);
+        totalOwingElement.textContent = `${totalOwing.toFixed(2)}`;
+    }
+
+    addDeleteEventListeners(periodId) {
+        const periodElement = document.querySelector(`[data-period-id="${periodId}"]`);
+        if (!periodElement) {
+            return;
+        }
+        
+        const deleteButtons = periodElement.querySelectorAll('.delete-transaction-btn');
+        
+        deleteButtons.forEach((btn) => {
+            // First remove any existing listeners to avoid duplicates
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            // Now add the event listener to the fresh button with increased touch target size
+            newBtn.style.padding = '8px';
+            newBtn.style.minWidth = '30px';
+            newBtn.style.minHeight = '30px';
+            
+            newBtn.addEventListener('click', (e) => {
+                const periodId = e.currentTarget.dataset.periodId;
+                const transactionId = e.currentTarget.dataset.transactionId;
+                this.deleteTransaction(periodId, transactionId);
+            });
+        });
+    }
+
+    deleteTransaction(periodId, transactionId) {
+        const period = this.billingPeriods.find(p => p.id === periodId);
+        if (!period) return;
+
+        if (confirm('Are you sure you want to delete this transaction?')) {
+            const transactionIndex = period.transactions.findIndex(t => t.id === transactionId);
+            if (transactionIndex !== -1) {
+                period.transactions.splice(transactionIndex, 1);
+                this.saveBillingPeriods();
+                this.updatePeriodDisplay(period);
+            }
+        }
+    }
+
+    // Method to open the edit period modal
+    openEditPeriodModal(periodId) {
+        this.currentPeriod = this.billingPeriods.find(p => p.id === periodId);
+        
+        if (!this.currentPeriod) return;
+        
+        // Populate form fields with current values
+        this.editStartDateInput.value = this.currentPeriod.startDate;
+        this.editEndDateInput.value = this.currentPeriod.endDate;
+        this.editInterestFreeDaysInput.value = this.currentPeriod.interestFreePeriodDays;
+        
+        // Display the modal
+        this.editPeriodModal.style.display = 'block';
+        
+        // Ensure the modal is scrollable on mobile
+        document.body.style.overflow = 'hidden';
+        document.querySelector('#edit-period-modal').style.overflowY = 'auto';
+        document.querySelector('#edit-period-modal').style.webkitOverflowScrolling = 'touch';
+    }
+
+    // Method to handle form submission for editing a period
+    handleEditPeriodFormSubmit(e) {
+        e.preventDefault();
+        
+        if (!this.currentPeriod) return;
+        
+        const startDate = this.editStartDateInput.value;
+        const endDate = this.editEndDateInput.value;
+        const interestFreeDays = parseInt(this.editInterestFreeDaysInput.value, 10);
+        
+        if (!startDate || !endDate || isNaN(interestFreeDays)) {
+            alert('Please fill out all fields with valid values');
+            return;
+        }
+        
+        if (new Date(startDate) > new Date(endDate)) {
+            alert('Start date must be before end date');
+            return;
+        }
+        
+        // Calculate the new interest-free end date
+        const startDateObj = new Date(startDate);
+        const interestFreeEndDate = new Date(startDateObj);
+        interestFreeEndDate.setDate(startDateObj.getDate() + interestFreeDays - 1);
+        
+        // Update the current period
+        this.currentPeriod.startDate = startDate;
+        this.currentPeriod.endDate = endDate;
+        this.currentPeriod.interestFreePeriodDays = interestFreeDays;
+        this.currentPeriod.interestFreeEndDate = this.getInputDateFormat(interestFreeEndDate);
+        
+        // Save and update the UI
+        this.saveBillingPeriods();
+        this.renderExistingBillingPeriods();
+        
+        // Close the modal
+        this.editPeriodModal.style.display = 'none';
+        
+        // Restore body scrolling
+        document.body.style.overflow = '';
+    }
+
+    // Format a date as "9th Jan 2025"
+    formatDate(date) {
+        const day = date.getDate();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getMonth()];
+        const year = date.getFullYear();
+        
+        // Add the appropriate suffix to the day
+        let suffix = 'th';
+        if (day === 1 || day === 21 || day === 31) {
+            suffix = 'st';
+        } else if (day === 2 || day === 22) {
+            suffix = 'nd';
+        } else if (day === 3 || day === 23) {
+            suffix = 'rd';
+        }
+        
+        return `${day}${suffix} ${month} ${year}`;
+    }
+
+    // Get YYYY-MM-DD format for form inputs and localStorage
+    getInputDateFormat(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 }
 
+// Add at the bottom of the file, outside any classes
 function setPayCycle() {
     if (window.billPlanner) {
         window.billPlanner.setPayCycle();
     }
 }
 
-// Global helper functions
-function hideOfflineNotification() {
-    const notification = document.getElementById('offlineNotification');
-    if (notification) {
-        notification.style.display = 'none';
+function addBill() {
+    if (window.billPlanner) {
+        window.billPlanner.addBill();
     }
 }
-
-// Listen for offline/online events
-window.addEventListener('offline', function() {
-    const notification = document.getElementById('offlineNotification');
-    if (notification) {
-        notification.style.display = 'block';
-    }
-});
-
-window.addEventListener('online', function() {
-    const notification = document.getElementById('offlineNotification');
-    if (notification) {
-        notification.style.display = 'none';
-    }
-});
