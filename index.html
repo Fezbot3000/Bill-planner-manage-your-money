@@ -153,12 +153,14 @@
                             </div>
                             <div class="app-form-group">
                                 <label for="billGroup">Group:</label>
-                                <select id="billGroup" class="form-control">
-                                    <option value="Group 1 - 2Up">Group 1 - 2Up</option>
-                                    <option value="Group 2 - Utilities">Group 2 - Utilities</option>
-                                    <option value="Group 3 - Subscriptions">Group 3 - Subscriptions</option>
-                                    <option value="Group 4 - Other">Group 4 - Other</option>
-                                </select>
+                                <div class="custom-group-container">
+                                    <select id="billGroup" class="form-control">
+                                        <!-- Groups will be populated dynamically -->
+                                    </select>
+                                    <button type="button" id="addGroupBtn" class="app-btn app-btn-secondary">
+                                        <span class="material-icons-round">add</span>
+                                    </button>
+                                </div>
                             </div>
                             <button onclick="addBill()" class="app-btn app-btn-primary add-bill-btn">
                                 <span class="material-icons-round">add</span> Add Bill
@@ -261,6 +263,81 @@
                     </div>
                     <button type="submit" class="app-btn app-btn-primary">Save Changes</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- Add Group Modal -->
+        <div id="addGroupModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Create New Group</h2>
+                <form id="add-group-form">
+                    <div class="app-form-group">
+                        <label for="newGroupName">Group Name:</label>
+                        <input type="text" id="newGroupName" required>
+                    </div>
+                    <button type="submit" class="app-btn app-btn-primary">Create Group</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Bill Modal -->
+        <div id="editBillModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Edit Bill</h2>
+                <form id="edit-bill-form">
+                    <div class="app-form-group">
+                        <label for="editBillName">Name:</label>
+                        <input type="text" id="editBillName" class="form-control" required>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillAmount">Amount:</label>
+                        <div class="app-input-with-prefix">
+                            <span class="app-input-prefix">$</span>
+                            <input type="number" id="editBillAmount" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillDate">Date:</label>
+                        <input type="date" id="editBillDate" class="form-control" required>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillFrequency">Frequency:</label>
+                        <select id="editBillFrequency" class="form-control">
+                            <option value="Monthly">Monthly</option>
+                            <option value="Fortnightly">Fortnightly</option>
+                            <option value="Yearly">Yearly</option>
+                            <option value="6-Monthly">6-Monthly</option>
+                            <option value="One-Off">One-Off</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillGroup">Group:</label>
+                        <div class="custom-group-container">
+                            <select id="editBillGroup" class="form-control">
+                                <!-- Groups will be populated dynamically -->
+                            </select>
+                            <button type="button" id="editAddGroupBtn" class="app-btn app-btn-secondary">
+                                <span class="material-icons-round">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="editBillIndex">
+                    <button type="submit" class="app-btn app-btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manage Groups Modal -->
+        <div id="manageGroupsModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Manage Groups</h2>
+                <div class="group-list" id="groupsList">
+                    <!-- Groups will be populated dynamically -->
+                </div>
             </div>
         </div>
 

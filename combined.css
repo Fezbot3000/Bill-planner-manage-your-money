@@ -1247,3 +1247,72 @@ body {
         gap: var(--spacing-1);
     }
 }
+
+/* Custom group container styling */
+.custom-group-container {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+}
+
+.custom-group-container select {
+    flex: 1;
+}
+
+#addGroupBtn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: var(--spacing-1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#addGroupBtn .material-icons-round {
+    font-size: 18px;
+}
+
+/* Group list styling */
+.group-list {
+    margin-top: var(--spacing-4);
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--divider);
+    transition: background-color var(--transition-fast);
+}
+
+.group-item:hover {
+    background-color: var(--surface-light);
+}
+
+.group-item:last-child {
+    border-bottom: none;
+}
+
+.group-item-name {
+    font-weight: 500;
+}
+
+.group-delete-btn {
+    color: var(--negative);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-2);
+    border-radius: 50%;
+    transition: background-color var(--transition-fast);
+}
+
+.group-delete-btn:hover {
+    background-color: var(--negative-light);
+}
