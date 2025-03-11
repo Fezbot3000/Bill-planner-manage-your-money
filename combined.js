@@ -340,7 +340,6 @@ function showSnackbar(message) {
 // ==========================================
 // Bill Planner Class
 // ==========================================
-
 class BillPlanner {
     constructor() {
         // DOM Elements
@@ -358,19 +357,6 @@ class BillPlanner {
         this.toggleMasterListBtn = document.getElementById('toggleMasterList');
         this.toggleAllCyclesBtn = document.getElementById('toggleAllCycles');
         this.customFrequencyModal = document.getElementById('customFrequencyModal');
-        this.addGroupBtn = document.getElementById('addGroupBtn');
-        this.addGroupModal = document.getElementById('addGroupModal');
-        this.addGroupForm = document.getElementById('add-group-form');
-        this.editBillModal = document.getElementById('editBillModal');
-        this.editBillForm = document.getElementById('edit-bill-form');
-        this.editBillNameEl = document.getElementById('editBillName');
-        this.editBillAmountEl = document.getElementById('editBillAmount');
-        this.editBillDateEl = document.getElementById('editBillDate');
-        this.editBillFrequencyEl = document.getElementById('editBillFrequency');
-        this.editBillGroupEl = document.getElementById('editBillGroup');
-        this.editBillIndexEl = document.getElementById('editBillIndex');
-        this.editAddGroupBtn = document.getElementById('editAddGroupBtn');
-        this.currentBillToEdit = null;
         
         if (!this.masterListEl) return; // Exit if elements not found
         
@@ -381,15 +367,12 @@ class BillPlanner {
         this.payCycleFrequency = 'Fortnightly';
         this.payCycleIncome = 0;
         this.customFrequencySettings = null;
-        this.groups = [];
         
         // Load saved data
         this.loadData();
-        this.loadGroups();
         
         // Initialize UI
         this.setupUI();
-        this.setupGroupUI();
 
         // Update the UI to show master list
         this.updateUI();
@@ -427,156 +410,32 @@ class BillPlanner {
         }
     }
     
-    // Load saved groups from localStorage
-    loadGroups() {
-        const savedGroups = localStorage.getItem('billGroups');
-        if (savedGroups) {
-            this.groups = JSON.parse(savedGroups);
-        } else {
-            // Default groups if none exist
-            this.groups = [
-                'Household',
-                'Utilities',
-                'Subscriptions',
-                'Other'
-            ];
-            this.saveGroups();
-        }
-        this.populateGroupDropdown();
-    }
-    
-    // Save groups to localStorage
-    saveGroups() {
-        localStorage.setItem('billGroups', JSON.stringify(this.groups));
-    }
-    
-    // Populate the group dropdown with the saved groups
-    populateGroupDropdown(targetEl = null) {
-        // Use the provided target element or default to this.billGroupEl
-        const dropdown = targetEl || this.billGroupEl;
-        
-        if (!dropdown) return;
-        
-        dropdown.innerHTML = '';
-        
-        this.groups.forEach(group => {
-            const option = document.createElement('option');
-            option.value = group;
-            option.textContent = group;
-            dropdown.appendChild(option);
-        });
-    }
-    
-    openEditBillModal(billIndex) {
-        const bill = this.masterBills[billIndex];
-        if (!bill) return;
-        
-        this.currentBillToEdit = bill;
-        
-        // Populate the form with bill data
-        this.editBillNameEl.value = bill.name || '';
-        this.editBillAmountEl.value = bill.amount || '';
-        this.editBillDateEl.value = bill.date || '';
-        this.editBillFrequencyEl.value = bill.frequency || 'Monthly';
-        
-        // Make sure the group dropdown is populated
-        this.populateGroupDropdown(this.editBillGroupEl);
-        this.editBillGroupEl.value = bill.group || '';
-        
-        // Store the index for later use
-        this.editBillIndexEl.value = billIndex;
-        
-        // Show the modal
-        this.editBillModal.style.display = 'block';
-        
-        // If the bill has a custom frequency, we should handle that
-        if (bill.frequency === 'Custom' && bill.customFrequency) {
-            // You may want to handle this separately or simply inform the user
-            // For now, we'll just preserve the customFrequency object when saving
-        }
-    }
-
-
-    updateBill() {
-        const index = parseInt(this.editBillIndexEl.value);
-        if (isNaN(index) || index < 0 || index >= this.masterBills.length) return;
-        
-        // Get form values
-        const name = this.editBillNameEl.value;
-        const amount = parseFloat(this.editBillAmountEl.value);
-        const date = this.editBillDateEl.value;
-        const frequency = this.editBillFrequencyEl.value;
-        const group = this.editBillGroupEl.value;
-        
-        if (!name || isNaN(amount) || !date || !frequency || !group) {
-            alert('Please fill in all fields with valid values');
-            return;
-        }
-        
-        // Preserve the custom frequency settings if they exist and frequency is still Custom
-        let customFrequency = null;
-        if (frequency === 'Custom' && this.currentBillToEdit && 
-            this.currentBillToEdit.frequency === 'Custom' && 
-            this.currentBillToEdit.customFrequency) {
-            customFrequency = this.currentBillToEdit.customFrequency;
-        }
-        
-        // Create updated bill object
-        const updatedBill = {
-            name,
-            amount,
-            date,
-            frequency,
-            group,
-            dateCategory: this.determineDateCategory(date)
-        };
-        
-        // Add custom frequency if applicable
-        if (customFrequency) {
-            updatedBill.customFrequency = customFrequency;
-        }
-        
-        // Update the bill in the array
-        this.masterBills[index] = updatedBill;
-        
-        // Save to localStorage
-        localStorage.setItem('billData', JSON.stringify(this.masterBills));
-        
-        // Close the modal
-        this.editBillModal.style.display = 'none';
-        
-        // Update the UI
-        this.updateUI();
-        
-        // Show success message
-        showSnackbar('Bill updated successfully!');
-    }
-
     // Set up UI event listeners
     setupUI() {
-        if (this.toggleMasterListBtn) {
-            this.toggleMasterListBtn.addEventListener('click', () => {
-                const masterListContainer = document.getElementById('masterListContainer');
-                const iconElem = this.toggleMasterListBtn.querySelector('.material-icons-round');
-                const textElem = this.toggleMasterListBtn.querySelector('.btn-text');
-                
-                const isHidden = masterListContainer.classList.contains('hidden');
-                
-                masterListContainer.classList.toggle('hidden', !isHidden);
-                
-                if (isHidden) {
-                    iconElem.textContent = 'visibility_off';
-                    textElem.textContent = 'Hide List';
-                } else {
-                    iconElem.textContent = 'visibility';
-                    textElem.textContent = 'Show List';
-                }
-            });
-            
-            // Set initial state - ensure master list is visible by default
+         
+if (this.toggleMasterListBtn) {
+        this.toggleMasterListBtn.addEventListener('click', () => {
             const masterListContainer = document.getElementById('masterListContainer');
-            masterListContainer.classList.remove('hidden');
-        }
+            const iconElem = this.toggleMasterListBtn.querySelector('.material-icons-round');
+            const textElem = this.toggleMasterListBtn.querySelector('.btn-text');
+            
+            const isHidden = masterListContainer.classList.contains('hidden');
+            
+            masterListContainer.classList.toggle('hidden', !isHidden);
+            
+            if (isHidden) {
+                iconElem.textContent = 'visibility_off';
+                textElem.textContent = 'Hide List';
+            } else {
+                iconElem.textContent = 'visibility';
+                textElem.textContent = 'Show List';
+            }
+        });
+        
+        // Set initial state - ensure master list is visible by default
+        const masterListContainer = document.getElementById('masterListContainer');
+        masterListContainer.classList.remove('hidden');
+    }
         
         // Toggle all cycles button
         if (this.toggleAllCyclesBtn) {
@@ -612,100 +471,11 @@ class BillPlanner {
                 }
             });
         }
-
-        if (this.editBillForm) {
-            this.editBillForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.updateBill();
-            });
-        }
-
-        if (this.editAddGroupBtn) {
-            this.editAddGroupBtn.addEventListener('click', () => {
-                if (this.addGroupModal) {
-                    this.addGroupModal.style.display = 'block';
-                }
-            });
-        }
-
-        if (this.editBillModal) {
-            const closeBtn = this.editBillModal.querySelector('.close-modal');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    this.editBillModal.style.display = 'none';
-                });
-            }
-            
-            window.addEventListener('click', (event) => {
-                if (event.target === this.editBillModal) {
-                    this.editBillModal.style.display = 'none';
-                }
-            });
-        }
         
         // Setup custom frequency modal
         this.setupCustomFrequencyModal();
     }
     
-
-
-    // Set up UI for group management
-    setupGroupUI() {
-        if (this.addGroupBtn) {
-            this.addGroupBtn.addEventListener('click', () => {
-                if (this.addGroupModal) {
-                    this.addGroupModal.style.display = 'block';
-                }
-            });
-        }
-        
-        if (this.addGroupForm) {
-            this.addGroupForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const newGroupNameInput = document.getElementById('newGroupName');
-                const newGroupName = newGroupNameInput.value.trim();
-                
-                if (newGroupName && !this.groups.includes(newGroupName)) {
-                    this.groups.push(newGroupName);
-                    this.saveGroups();
-                    this.populateGroupDropdown();
-                    
-                    // Select the newly created group
-                    if (this.billGroupEl) {
-                        this.billGroupEl.value = newGroupName;
-                    }
-                    
-                    // Reset form and close modal
-                    newGroupNameInput.value = '';
-                    if (this.addGroupModal) {
-                        this.addGroupModal.style.display = 'none';
-                    }
-                    
-                    showSnackbar('Group created successfully!');
-                } else if (this.groups.includes(newGroupName)) {
-                    alert('A group with this name already exists.');
-                }
-            });
-        }
-        
-        // Set up close modal functionality
-        if (this.addGroupModal) {
-            const closeBtn = this.addGroupModal.querySelector('.close-modal');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    this.addGroupModal.style.display = 'none';
-                });
-            }
-            
-            // Close modal when clicking outside
-            window.addEventListener('click', (event) => {
-                if (event.target === this.addGroupModal) {
-                    this.addGroupModal.style.display = 'none';
-                }
-            });
-        }
-    }
-
     // Update the toggle button text and icon
     updateToggleButton(button, isHidden) {
         if (!button) return;
@@ -910,27 +680,11 @@ class BillPlanner {
                 <span class="bill-amount">${bill.amount.toFixed(2)}</span>
             `;
             
-            // Create button container for edit and delete buttons
-            let buttonContainer = document.createElement('div');
-            buttonContainer.className = 'bill-actions';
-            
-            // Create edit button
-            let editButton = document.createElement('button');
-            editButton.className = 'edit-btn';
-            editButton.innerHTML = '<span class="material-icons-round">edit</span>';
-            editButton.setAttribute('aria-label', 'Edit bill');
-            editButton.onclick = (e) => {
-                e.stopPropagation(); // Prevent event bubbling
-                this.openEditBillModal(index);
-            };
-            
-            // Create delete button
             let deleteButton = document.createElement('button');
             deleteButton.className = 'delete-btn';
-            deleteButton.innerHTML = '<span class="material-icons-round">delete</span>';
+            deleteButton.innerHTML = '<span class="material-icons-round delete-icon">delete</span>';
             deleteButton.setAttribute('aria-label', 'Delete bill');
-            deleteButton.onclick = (e) => {
-                e.stopPropagation(); // Prevent event bubbling
+            deleteButton.onclick = () => {
                 if (confirm(`Are you sure you want to delete "${bill.name}"?`)) {
                     this.masterBills.splice(index, 1);
                     localStorage.setItem('billData', JSON.stringify(this.masterBills));
@@ -939,18 +693,11 @@ class BillPlanner {
                 }
             };
             
-            // Add buttons to container
-            buttonContainer.appendChild(editButton);
-            buttonContainer.appendChild(deleteButton);
-            
-            // Add button container to list item
-            li.appendChild(buttonContainer);
-            
-            // Add list item to master list
+            li.appendChild(deleteButton);
             this.masterListEl.appendChild(li);
         });
     }
-
+    
     // Set the pay cycle parameters
     setPayCycle() {
         if (!this.payCycleStartEl || !this.payCycleFrequencyEl || !this.payCycleIncomeEl) return;
@@ -1085,7 +832,7 @@ class BillPlanner {
         result.setDate(result.getDate() + (7 + dayOfWeek - result.getDay()) % 7);
         return this.normalizeDate(result);
     }
-
+    
     // Calculate the next occurrence of a bill based on its frequency
     calculateNextBillDate(bill, currentDate) {
         // Ensure the bill has a date category
@@ -1236,7 +983,7 @@ class BillPlanner {
                         currentBillDate = nextDate;
                     }
                 }
-
+                
                 // After finding the right occurrence for this cycle, check if it falls within the cycle
                 // Use inclusive comparison for both start and end dates
                 if (this.isDateInRange(currentBillDate, cycleStart, cycleEnd)) {
@@ -1352,7 +1099,7 @@ class BillPlanner {
             if (index !== 0) {
                 cycleContent.classList.add("hidden"); // Only first cycle open by default
             }
-
+            
             // Group bills by their group
             let groupedBills = {};
             cycle.bills.forEach(bill => {
@@ -1426,95 +1173,95 @@ class BillPlanner {
             // Add pay cycle to container
             this.payCyclesEl.appendChild(cycleContainer);
         });
-        
-        this.renderFinancialChart();
+this.renderFinancialChart();
     }
+
 
     renderFinancialChart() {
-        const chartCanvas = document.getElementById('financial-chart');
-        if (!chartCanvas || !window.Chart || this.payCycles.length === 0) return;
-        
-        // Clear any existing chart
-        if (this.financialChart) {
-            this.financialChart.destroy();
-        }
-        
-        // Prepare data
-        const labels = this.payCycles.map((cycle, index) => `Cycle ${index + 1}`);
-        const incomeData = this.payCycles.map(cycle => cycle.income);
-        const expensesData = this.payCycles.map(cycle => {
-            return cycle.bills.reduce((total, bill) => total + bill.amount, 0);
-        });
-        const balanceData = this.payCycles.map((cycle, index) => {
-            return incomeData[index] - expensesData[index];
-        });
-
-        // Create chart
-        this.financialChart = new Chart(chartCanvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Income',
-                        data: incomeData,
-                        backgroundColor: 'rgba(100, 149, 237, 0.5)',
-                        borderColor: 'rgba(100, 149, 237, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Expenses',
-                        data: expensesData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Balance',
-                        data: balanceData,
-                        type: 'line',
-                        fill: false,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        tension: 0.1,
-                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(75, 192, 192, 1)',
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Amount ($)'
-                        }
-                    },
-                    y1: {
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: {
-                            drawOnChartArea: false
-                        },
-                        title: {
-                            display: true,
-                            text: 'Balance ($)'
-                        }
-                    }
+    const chartCanvas = document.getElementById('financial-chart');
+    if (!chartCanvas || !window.Chart || this.payCycles.length === 0) return;
+    
+    // Clear any existing chart
+    if (this.financialChart) {
+        this.financialChart.destroy();
+    }
+    
+    // Prepare data
+    const labels = this.payCycles.map((cycle, index) => `Cycle ${index + 1}`);
+    const incomeData = this.payCycles.map(cycle => cycle.income);
+    const expensesData = this.payCycles.map(cycle => {
+        return cycle.bills.reduce((total, bill) => total + bill.amount, 0);
+    });
+    const balanceData = this.payCycles.map((cycle, index) => {
+        return incomeData[index] - expensesData[index];
+    });
+    
+    // Create chart
+    this.financialChart = new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: 'rgba(100, 149, 237, 0.5)',
+                    borderColor: 'rgba(100, 149, 237, 1)',
+                    borderWidth: 1
                 },
-                plugins: {
+                {
+                    label: 'Expenses',
+                    data: expensesData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Balance',
+                    data: balanceData,
+                    type: 'line',
+                    fill: false,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    tension: 0.1,
+                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(75, 192, 192, 1)',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Financial Overview Across Pay Cycles'
+                        text: 'Amount ($)'
+                    }
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Balance ($)'
                     }
                 }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Financial Overview Across Pay Cycles'
+                }
             }
-        });
-    }
+        }
+    });
+}
 }
 
 // ==========================================
@@ -1797,12 +1544,12 @@ class InterestFreeTracker {
                     <span>${formattedStartDate} to ${formattedEndDate}</span>
                 </h2>
                 <div class="period-buttons">
-                    <button class="edit-period-btn app-btn app-btn-secondary" data-period-id="${period.id}">
+                    <button class="edit-btn" data-period-id="${period.id}">
                         <span class="edit-icon"></span>
                         Edit
                     </button>
-                    <button class="delete-period-btn app-btn app-btn-delete" data-period-id="${period.id}">
-                        <span class="material-icons-round">delete</span>
+                    <button class="delete-btn-text" data-period-id="${period.id}">
+                        <span class="material-icons-round delete-icon">delete</span>
                         Delete
                     </button>
                 </div>
@@ -1829,8 +1576,8 @@ class InterestFreeTracker {
                 </div>
             </div>
             <div class="period-actions">
-                <button class="add-transaction-btn app-btn app-btn-primary" data-period-id="${period.id}">Add Transaction</button>
-                <button class="add-repayment-btn app-btn app-btn-primary" data-period-id="${period.id}">Add Repayment</button>
+                <button class="app-btn app-btn-primary btn-md btn-flex" data-period-id="${period.id}">Add Transaction</button>
+                <button class="app-btn app-btn-primary btn-md btn-flex" data-period-id="${period.id}">Add Repayment</button>
             </div>
             <div class="responsive-table-container">
                 <table class="transactions-table">
@@ -1901,11 +1648,12 @@ class InterestFreeTracker {
                 <td data-type="${transaction.type}">${transaction.type === 'repayment' ? '-$' : '$'}${Math.abs(parseFloat(transaction.amount)).toFixed(2)}</td>
                 <td>
                     <button class="delete-transaction-btn app-btn app-btn-delete" data-period-id="${periodId}" data-transaction-id="${transactionId}">
-                        <span class="material-icons-round" style="font-size: 14px;">delete</span>
+                        <span class="material-icons-round delete-icon">delete</span>
                     </button>
                 </td>
             </tr>
-        `}).join('');
+            `;
+        }).join('');
     }
 
     calculateRemainingDays(period) {
@@ -2054,11 +1802,7 @@ class InterestFreeTracker {
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
-            // Now add the event listener to the fresh button with increased touch target size
-            newBtn.style.padding = '8px';
-            newBtn.style.minWidth = '30px';
-            newBtn.style.minHeight = '30px';
-            
+            // Now add the event listener to the fresh button - styles handled by CSS now
             newBtn.addEventListener('click', (e) => {
                 const periodId = e.currentTarget.dataset.periodId;
                 const transactionId = e.currentTarget.dataset.transactionId;
