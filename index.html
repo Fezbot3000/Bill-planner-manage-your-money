@@ -42,12 +42,12 @@
             <div class="header-content">
                 <h1>Finance Tracker</h1>
                 <div class="app-actions">
-                    <button id="theme-toggle-btn" class="app-btn app-btn-secondary btn-md">
+                    <button id="theme-toggle-btn" class="app-btn app-btn-secondary">
                         <span class="theme-icon dark-icon"></span>
                         Dark Mode
                     </button>
-                    <button id="export-all-btn" class="app-btn app-btn-secondary btn-md">Export All</button>
-                    <button id="import-all-btn" class="app-btn app-btn-secondary btn-md">Import All</button>
+                    <button id="export-all-btn" class="app-btn app-btn-secondary">Export All</button>
+                    <button id="import-all-btn" class="app-btn app-btn-secondary">Import All</button>
                     <input type="file" id="import-file" accept=".json" style="display: none;">
                 </div>
             </div>
@@ -74,8 +74,8 @@
                             <input type="number" id="interest-free-days" value="55" min="1" max="365">
                         </div>
                         <div class="form-row">
-                            <button id="add-period-btn" class="app-btn app-btn-primary btn-md btn-flex">Add Default Billing Period</button>
-                            <button id="create-custom-period-btn" class="app-btn app-btn-primary btn-md btn-flex">Create Custom Period</button>
+                            <button id="add-period-btn" class="app-btn app-btn-primary">Add Default Billing Period</button>
+                            <button id="create-custom-period-btn" class="app-btn app-btn-primary">Create Custom Period</button>
                         </div>
                     </div>
 
@@ -119,7 +119,7 @@
                                     <input type="number" id="payCycleIncome" class="form-control" step="0.01">
                                 </div>
                             </div>
-                            <button onclick="setPayCycle()" class="app-btn app-btn-primary btn-md btn-full">Set Pay Cycle</button>
+                            <button onclick="setPayCycle()" class="app-btn app-btn-primary">Set Pay Cycle</button>
                         </div>
                         
                         <!-- Add Bill Form -->
@@ -153,14 +153,16 @@
                             </div>
                             <div class="app-form-group">
                                 <label for="billGroup">Group:</label>
-                                <select id="billGroup" class="form-control">
-                                    <option value="Group 1 - 2Up">Group 1 - 2Up</option>
-                                    <option value="Group 2 - Utilities">Group 2 - Utilities</option>
-                                    <option value="Group 3 - Subscriptions">Group 3 - Subscriptions</option>
-                                    <option value="Group 4 - Other">Group 4 - Other</option>
-                                </select>
+                                <div class="custom-group-container">
+                                    <select id="billGroup" class="form-control">
+                                        <!-- Groups will be populated dynamically -->
+                                    </select>
+                                    <button type="button" id="addGroupBtn" class="app-btn app-btn-secondary">
+                                        <span class="material-icons-round">add</span>
+                                    </button>
+                                </div>
                             </div>
-                            <button onclick="addBill()" class="app-btn app-btn-primary btn-lg btn-full">
+                            <button onclick="addBill()" class="app-btn app-btn-primary add-bill-btn">
                                 <span class="material-icons-round">add</span> Add Bill
                             </button>
                         </div>
@@ -170,7 +172,7 @@
                     <div class="master-bill-section">
                         <div class="section-header master-bill-header">
                             <h2>Master Bill List</h2>
-                            <button id="toggleMasterList" class="toggle-btn">
+                            <button id="toggleMasterList" class="app-btn app-btn-icon toggle-btn">
                                 <span class="material-icons-round">visibility_off</span>
                                 <span class="btn-text">Hide List</span>
                             </button>
@@ -184,7 +186,7 @@
                     <div class="pay-cycles-section">
                         <div class="section-header pay-cycles-header">
                             <h2>Pay Cycles</h2>
-                            <button id="toggleAllCycles" class="toggle-btn">
+                            <button id="toggleAllCycles" class="app-btn app-btn-icon toggle-btn">
                                 <span class="material-icons-round">expand_less</span>
                                 <span class="btn-text">Collapse All</span>
                             </button>
@@ -213,7 +215,7 @@
                         <label for="transaction-description">Description:</label>
                         <input type="text" id="transaction-description" placeholder="Optional">
                     </div>
-                    <button type="submit" class="app-btn app-btn-primary btn-md btn-full">Add Transaction</button>
+                    <button type="submit" class="app-btn app-btn-primary">Add Transaction</button>
                 </form>
             </div>
         </div>
@@ -236,7 +238,7 @@
                         <label for="payment-description">Description:</label>
                         <input type="text" id="payment-description" placeholder="Optional">
                     </div>
-                    <button type="submit" class="app-btn app-btn-primary btn-md btn-full">Add Payment</button>
+                    <button type="submit" class="app-btn app-btn-primary">Add Payment</button>
                 </form>
             </div>
         </div>
@@ -259,8 +261,83 @@
                         <label for="edit-interest-free-days">Interest-Free Days:</label>
                         <input type="number" id="edit-interest-free-days" min="1" max="365" required>
                     </div>
-                    <button type="submit" class="app-btn app-btn-primary btn-md btn-full">Save Changes</button>
+                    <button type="submit" class="app-btn app-btn-primary">Save Changes</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- Add Group Modal -->
+        <div id="addGroupModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Create New Group</h2>
+                <form id="add-group-form">
+                    <div class="app-form-group">
+                        <label for="newGroupName">Group Name:</label>
+                        <input type="text" id="newGroupName" required>
+                    </div>
+                    <button type="submit" class="app-btn app-btn-primary">Create Group</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Bill Modal -->
+        <div id="editBillModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Edit Bill</h2>
+                <form id="edit-bill-form">
+                    <div class="app-form-group">
+                        <label for="editBillName">Name:</label>
+                        <input type="text" id="editBillName" class="form-control" required>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillAmount">Amount:</label>
+                        <div class="app-input-with-prefix">
+                            <span class="app-input-prefix">$</span>
+                            <input type="number" id="editBillAmount" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillDate">Date:</label>
+                        <input type="date" id="editBillDate" class="form-control" required>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillFrequency">Frequency:</label>
+                        <select id="editBillFrequency" class="form-control">
+                            <option value="Monthly">Monthly</option>
+                            <option value="Fortnightly">Fortnightly</option>
+                            <option value="Yearly">Yearly</option>
+                            <option value="6-Monthly">6-Monthly</option>
+                            <option value="One-Off">One-Off</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="app-form-group">
+                        <label for="editBillGroup">Group:</label>
+                        <div class="custom-group-container">
+                            <select id="editBillGroup" class="form-control">
+                                <!-- Groups will be populated dynamically -->
+                            </select>
+                            <button type="button" id="editAddGroupBtn" class="app-btn app-btn-secondary">
+                                <span class="material-icons-round">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="editBillIndex">
+                    <button type="submit" class="app-btn app-btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manage Groups Modal -->
+        <div id="manageGroupsModal" class="app-modal modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Manage Groups</h2>
+                <div class="group-list" id="groupsList">
+                    <!-- Groups will be populated dynamically -->
+                </div>
             </div>
         </div>
 
@@ -297,8 +374,8 @@
                 </div>
                 
                 <div class="modal-buttons">
-                    <button class="app-btn btn-md" id="cancelCustomFrequency">Cancel</button>
-                    <button class="app-btn app-btn-primary btn-md" id="saveCustomFrequency">Save</button>
+                    <button class="app-btn" id="cancelCustomFrequency">Cancel</button>
+                    <button class="app-btn app-btn-primary" id="saveCustomFrequency">Save</button>
                 </div>
             </div>
         </div>
@@ -310,9 +387,9 @@
                 <h2>Import Data</h2>
                 <p>Choose which data you want to import:</p>
                 <div class="import-options">
-                    <button id="import-interest-free-btn" class="app-btn app-btn-primary btn-md btn-full">Interest-Free Tracker</button>
-                    <button id="import-bill-planner-btn" class="app-btn app-btn-primary btn-md btn-full">Bill Planner</button>
-                    <button id="import-both-btn" class="app-btn app-btn-primary btn-md btn-full">Import Both</button>
+                    <button id="import-interest-free-btn" class="app-btn app-btn-primary">Interest-Free Tracker</button>
+                    <button id="import-bill-planner-btn" class="app-btn app-btn-primary">Bill Planner</button>
+                    <button id="import-both-btn" class="app-btn app-btn-primary">Import Both</button>
                 </div>
             </div>
         </div>
@@ -323,9 +400,9 @@
                 <h2>Export Data</h2>
                 <p>Choose which data you want to export:</p>
                 <div class="export-options">
-                    <button id="export-interest-free-btn" class="app-btn app-btn-primary btn-md btn-full">Interest-Free Tracker</button>
-                    <button id="export-bill-planner-btn" class="app-btn app-btn-primary btn-md btn-full">Bill Planner</button>
-                    <button id="export-both-btn" class="app-btn app-btn-primary btn-md btn-full">Export Both</button>
+                    <button id="export-interest-free-btn" class="app-btn app-btn-primary">Interest-Free Tracker</button>
+                    <button id="export-bill-planner-btn" class="app-btn app-btn-primary">Bill Planner</button>
+                    <button id="export-both-btn" class="app-btn app-btn-primary">Export Both</button>
                 </div>
             </div>
         </div>
